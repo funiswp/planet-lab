@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>星球实验室</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #0a0a1a;
+            color: #fff;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        h1 {
+            color: #4fc3f7;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .container {
+            display: flex;
+            width: 100%;
+            max-width: 1200px;
+            gap: 20px;
+        }
+        
+        .controls {
+            flex: 1;
+            background-color: #1a1a2e;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 15px rgba(79, 195, 247, 0.2);
+        }
+        
+        .visualization {
+            flex: 2;
+            background-color: #1a1a2e;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 15px rgba(79, 195, 247, 0.2);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .control-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #4fc3f7;
+        }
+        
+        input[type="range"] {
+            width: 100%;
+            margin-bottom: 10px;
+            accent-color: #4fc3f7;
+        }
+        
+        .value-display {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.9em;
+            color: #ccc;
+        }
+        
+        .planet-display {
+            position: relative;
+            width: 300px;
+            height: 300px;
+            margin-bottom: 30px;
+        }
+        
+        .sun {
+            position: absolute;
+            width: 60px;
+            height: 60px;
+            background: radial-gradient(circle at 30% 30%, #fff, #ffeb3b, #ff9800);
+            border-radius: 50%;
+            box-shadow: 0 0 50px #ff9800;
+            top: 50%;
+            left: 10%;
+            transform: translateY(-50%);
+            z-index: 1;
+        }
+        
+        .planet {
+            position: absolute;
+            border-radius: 50%;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 2;
+        }
+        
+        .atmosphere {
+            position: absolute;
+            border-radius: 50%;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            opacity: 0.3;
+            z-index: 1;
+        }
+        
+        .results {
+            width: 100%;
+            background-color: #16213e;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+        
+        .result-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            padding-bottom: 5px;
+            border-bottom: 1px solid #4fc3f7;
+        }
+        
+        .result-label {
+            font-weight: bold;
+            color: #4fc3f7;
+        }
+        
+        .result-value {
+            color: #fff;
+        }
+        
+        .reset-btn {
+            background-color: #4fc3f7;
+            color: #0a0a1a;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            margin-top: 20px;
+            transition: all 0.3s;
+        }
+        
+        .reset-btn:hover {
+            background-color: #3ab0e5;
+            transform: scale(1.05);
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>星球实验室</h1>
+    
+    <div class="container">
+        <div class="controls">
+            <div class="control-group">
+                <label for="distance">日地距离 (百万公里):</label>
+                <input type="range" id="distance" min="50" max="300" value="150" step="1">
+                <div class="value-display">
+                    <span>50</span>
+                    <span id="distance-value">150</span>
+                    <span>300</span>
+                </div>
+            </div>
+            
+            <div class="control-group">
+                <label for="atmosphere">大气厚度 (km):</label>
+                <input type="range" id="atmosphere" min="0" max="100" value="50" step="1">
+                <div class="value-display">
+                    <span>0</span>
+                    <span id="atmosphere-value">50</span>
+                    <span>100</span>
+                </div>
+            </div>
+            
+            <div class="control-group">
+                <label for="mass">地球质量 (相对地球):</label>
+                <input type="range" id="mass" min="0.1" max="5" value="1" step="0.1">
+                <div class="value-display">
+                    <span>0.1</span>
+                    <span id="mass-value">1.0</span>
+                    <span>5.0</span>
+                </div>
+            </div>
+            
+            <div class="control-group">
+                <label for="albedo">反照率 (反射率):</label>
+                <input type="range" id="albedo" min="0" max="1" value="0.3" step="0.01">
+                <div class="value-display">
+                    <span>0</span>
+                    <span id="albedo-value">0.3</span>
+                    <span>1</span>
+                </div>
+            </div>
+            
+            <button class="reset-btn" id="reset-btn">重置参数</button>
+        </div>
+        
+        <div class="visualization">
+            <div class="planet-display">
+                <div class="sun"></div>
+                <div class="planet" id="planet"></div>
+                <div class="atmosphere" id="atmosphere-layer"></div>
+            </div>
+            
+            <div class="results">
+                <div class="result-item">
+                    <span class="result-label">平均温度:</span>
+                    <span class="result-value" id="avg-temp">15°C</span>
+                </div>
+                <div class="result-item">
+                    <span class="result-label">昼夜温差:</span>
+                    <span class="result-value" id="temp-range">10°C</span>
+                </div>
+                <div class="result-item">
+                    <span class="result-label">大气压强:</span>
+                    <span class="result-value" id="pressure">1.0 atm</span>
+                </div>
+                <div class="result-item">
+                    <span class="result-label">地心引力:</span>
+                    <span class="result-value" id="gravity">1.0 G</span>
+                </div>
+                <div class="result-item">
+                    <span class="result-label">宜居性指数:</span>
+                    <span class="result-value" id="habitability">0.85</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 获取DOM元素
+        const distanceSlider = document.getElementById('distance');
+        const atmosphereSlider = document.getElementById('atmosphere');
+        const massSlider = document.getElementById('mass');
+        const albedoSlider = document.getElementById('albedo');
+        const resetBtn = document.getElementById('reset-btn');
+        
+        const distanceValue = document.getElementById('distance-value');
+        const atmosphereValue = document.getElementById('atmosphere-value');
+        const massValue = document.getElementById('mass-value');
+        const albedoValue = document.getElementById('albedo-value');
+        
+        const planet = document.getElementById('planet');
+        const atmosphereLayer = document.getElementById('atmosphere-layer');
+        
+        const avgTempDisplay = document.getElementById('avg-temp');
+        const tempRangeDisplay = document.getElementById('temp-range');
+        const pressureDisplay = document.getElementById('pressure');
+        const gravityDisplay = document.getElementById('gravity');
+        const habitabilityDisplay = document.getElementById('habitability');
+        
+        // 初始化参数
+        let params = {
+            distance: 150,
+            atmosphere: 50,
+            mass: 1,
+            albedo: 0.3
+        };
+        
+        // 更新显示值
+        function updateDisplayValues() {
+            distanceValue.textContent = params.distance;
+            atmosphereValue.textContent = params.atmosphere;
+            massValue.textContent = params.mass.toFixed(1);
+            albedoValue.textContent = params.albedo.toFixed(2);
+        }
+        
+        // 更新视觉效果
+        function updateVisuals() {
+            // 计算行星大小 (基于质量)
+            const planetSize = 30 + params.mass * 20;
+            planet.style.width = `${planetSize}px`;
+            planet.style.height = `${planetSize}px`;
+            
+            // 计算行星颜色 (基于温度)
+            const avgTemp = calculateAvgTemp();
+            const tempColor = getTemperatureColor(avgTemp);
+            planet.style.background = `radial-gradient(circle at 30% 30%, ${lightenColor(tempColor, 30)}, ${tempColor})`;
+            
+            // 计算大气层大小和透明度
+            const atmosphereSize = planetSize + params.atmosphere * 2;
+            atmosphereLayer.style.width = `${atmosphereSize}px`;
+            atmosphereLayer.style.height = `${atmosphereSize}px`;
+            
+            // 大气层颜色和透明度
+            const atmosphereOpacity = Math.min(0.3 + params.atmosphere / 150, 0.7);
+            atmosphereLayer.style.opacity = atmosphereOpacity;
+            atmosphereLayer.style.background = `radial-gradient(circle at 30% 30%, rgba(135, 206, 250, ${atmosphereOpacity}), rgba(0, 191, 255, ${atmosphereOpacity * 0.7}))`;
+            
+            // 更新行星位置 (基于日地距离)
+            const distanceRatio = (params.distance - 50) / (300 - 50);
+            const planetLeft = 10 + distanceRatio * 70;
+            planet.style.left = `${planetLeft}%`;
+        }
+        
+        // 计算平均温度 (简化模型)
+        function calculateAvgTemp() {
+            // 基础温度基于日地距离 (反平方定律)
+            const baseTemp = 280 / Math.sqrt(params.distance / 150);
+            
+            // 调整反照率 (高反照率降低温度)
+            const albedoEffect = 1 - params.albedo;
+            
+            // 大气温室效应
+            const greenhouseEffect = 1 + (params.atmosphere / 100) * 0.8;
+            
+            // 最终平均温度 (摄氏度)
+            const avgTemp = baseTemp * albedoEffect * greenhouseEffect - 273;
+            
+            return avgTemp;
+        }
+        
+        // 计算昼夜温差
+        function calculateTempRange() {
+            // 基础温差基于大气厚度 (厚大气减小温差)
+            const baseRange = 30 - (params.atmosphere / 100) * 25;
+            
+            // 质量影响 (大质量行星可能大气更厚，但这里简化)
+            const massEffect = 1 + (params.mass - 1) * 0.2;
+            
+            return baseRange * massEffect;
+        }
+        
+        // 计算大气压强
+        function calculatePressure() {
+            // 基于大气厚度和质量
+            return (params.atmosphere / 50) * params.mass;
+        }
+        
+        // 计算地心引力 (以地球重力为1G)
+        function calculateGravity() {
+            // 直接使用质量比，假设半径与质量立方根成正比
+            // F = G*M*m/r²，假设密度相同，r ∝ M^(1/3)
+            // 所以表面重力 g ∝ M / r² ∝ M / (M^(2/3)) = M^(1/3)
+            return Math.pow(params.mass, 1/3);
+        }
+        
+        // 计算宜居性指数 (0-1)
+        function calculateHabitability() {
+            const avgTemp = calculateAvgTemp();
+            const tempRange = calculateTempRange();
+            const pressure = calculatePressure();
+            const gravity = calculateGravity();
+            
+            // 温度适宜性 (15°C为最佳)
+            const tempScore = Math.max(0, 1 - Math.abs(avgTemp - 15) / 30);
+            
+            // 温差适宜性 (越小越好)
+            const rangeScore = Math.max(0, 1 - tempRange / 50);
+            
+            // 气压适宜性 (1atm为最佳)
+            const pressureScore = Math.max(0, 1 - Math.abs(pressure - 1) / 2);
+            
+            // 重力适宜性 (1G为最佳)
+            const gravityScore = Math.max(0, 1 - Math.abs(gravity - 1) / 0.5);
+            
+            // 综合评分
+            const score = (tempScore * 0.3 + rangeScore * 0.25 + pressureScore * 0.25 + gravityScore * 0.2) * 
+                          (params.atmosphere > 10 ? 1 : params.atmosphere / 10);
+            
+            return Math.min(1, Math.max(0, score));
+        }
+        
+        // 根据温度获取颜色
+        function getTemperatureColor(temp) {
+            if (temp < -20) return '#b0e0e6';  // 非常冷 - 浅蓝色
+            if (temp < 0) return '#1e90ff';    // 冷 - 蓝色
+            if (temp < 15) return '#3cb371';   // 凉 - 绿色
+            if (temp < 30) return '#ffa500';   // 温暖 - 橙色
+            if (temp < 50) return '#ff4500';   // 热 - 红色
+            return '#8b0000';                 // 非常热 - 深红色
+        }
+        
+        // 颜色变亮
+        function lightenColor(color, percent) {
+            const num = parseInt(color.replace('#', ''), 16);
+            const amt = Math.round(2.55 * percent);
+            const R = (num >> 16) + amt;
+            const G = (num >> 8 & 0x00FF) + amt;
+            const B = (num & 0x0000FF) + amt;
+            
+            return '#' + (
+                0x1000000 + 
+                (R < 255 ? R < 1 ? 0 : R : 255) * 0x10000 + 
+                (G < 255 ? G < 1 ? 0 : G : 255) * 0x100 + 
+                (B < 255 ? B < 1 ? 0 : B : 255)
+            ).toString(16).slice(1);
+        }
+        
+        // 更新所有计算结果
+        function updateCalculations() {
+            const avgTemp = calculateAvgTemp();
+            const tempRange = calculateTempRange();
+            const pressure = calculatePressure();
+            const gravity = calculateGravity();
+            const habitability = calculateHabitability();
+            
+            avgTempDisplay.textContent = `${avgTemp.toFixed(1)}°C`;
+            tempRangeDisplay.textContent = `${tempRange.toFixed(1)}°C`;
+            pressureDisplay.textContent = `${pressure.toFixed(2)} atm`;
+            gravityDisplay.textContent = `${gravity.toFixed(2)} G`;
+            habitabilityDisplay.textContent = habitability.toFixed(2);
+        }
+        
+        // 更新所有内容
+        function updateAll() {
+            updateDisplayValues();
+            updateVisuals();
+            updateCalculations();
+        }
+        
+        // 事件监听器
+        distanceSlider.addEventListener('input', function() {
+            params.distance = parseFloat(this.value);
+            updateAll();
+        });
+        
+        atmosphereSlider.addEventListener('input', function() {
+            params.atmosphere = parseFloat(this.value);
+            updateAll();
+        });
+        
+        massSlider.addEventListener('input', function() {
+            params.mass = parseFloat(this.value);
+            updateAll();
+        });
+        
+        albedoSlider.addEventListener('input', function() {
+            params.albedo = parseFloat(this.value);
+            updateAll();
+        });
+        
+        resetBtn.addEventListener('click', function() {
+            params = {
+                distance: 150,
+                atmosphere: 50,
+                mass: 1,
+                albedo: 0.3
+            };
+            
+            distanceSlider.value = params.distance;
+            atmosphereSlider.value = params.atmosphere;
+            massSlider.value = params.mass;
+            albedoSlider.value = params.albedo;
+            
+            updateAll();
+        });
+        
+        // 初始化
+        updateAll();
+    </script>
+</body>
+</html>
